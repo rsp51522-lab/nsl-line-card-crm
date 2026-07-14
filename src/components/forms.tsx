@@ -124,8 +124,51 @@ export function ActivityCreateForm({ contacts }: { contacts: Contact[] }) {
 
 export function ContactCreateForm({ contact }: { contact: Contact }) {
   const [message, setMessage] = useState("");
+  const [frontImagePath, setFrontImagePath] = useState("");
+  const [frontImageMimeType, setFrontImageMimeType] = useState("");
+  const [frontPreviewUrl, setFrontPreviewUrl] = useState("");
+  const [backImagePath, setBackImagePath] = useState("");
+  const [backImageMimeType, setBackImageMimeType] = useState("");
+  const [backPreviewUrl, setBackPreviewUrl] = useState("");
+  const [uploadMessage, setUploadMessage] = useState("");
+  const [isUploading, startUploadTransition] = useTransition();
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+
+  async function uploadCardImage(side: "front" | "back", file: File) {
+    const formData = new FormData();
+    formData.append("side", side);
+    formData.append("file", file);
+
+    const response = await fetch("/api/card-images", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = (await response.json()) as {
+      error?: string;
+      message?: string;
+      storagePath?: string;
+      mimeType?: string;
+      publicUrl?: string;
+    };
+
+    if (!response.ok || !data.storagePath) {
+      throw new Error(data.error || "画像保存に失敗しました。");
+    }
+
+    if (side === "front") {
+      setFrontImagePath(data.storagePath);
+      setFrontImageMimeType(data.mimeType || "");
+      setFrontPreviewUrl(data.publicUrl || "");
+    } else {
+      setBackImagePath(data.storagePath);
+      setBackImageMimeType(data.mimeType || "");
+      setBackPreviewUrl(data.publicUrl || "");
+    }
+
+    setUploadMessage(data.message || "画像を保存しました。");
+  }
 
   return (
     <form
@@ -152,6 +195,10 @@ export function ContactCreateForm({ contact }: { contact: Contact }) {
               nextFollowUpDate: String(form.get("nextFollowUpDate") || ""),
               nextFollowUpType: String(form.get("nextFollowUpType") || ""),
               memo: String(form.get("memo") || ""),
+              frontImagePath: String(form.get("frontImagePath") || ""),
+              frontImageMimeType: String(form.get("frontImageMimeType") || ""),
+              backImagePath: String(form.get("backImagePath") || ""),
+              backImageMimeType: String(form.get("backImageMimeType") || ""),
             });
             setMessage(result.message || "保存しました。");
             router.refresh();
@@ -161,6 +208,56 @@ export function ContactCreateForm({ contact }: { contact: Contact }) {
         });
       }}
     >
+      <div className={styles.captureGrid}>
+        {[
+          {
+            label: "表面を撮影",
+            previewUrl: frontPreviewUrl,
+            side: "front" as const,
+            storagePath: frontImagePath,
+          },
+          {
+            label: "裏面を撮影",
+            previewUrl: backPreviewUrl,
+            side: "back" as const,
+            storagePath: backImagePath,
+          },
+        ].map((item) => (
+          <label key={item.side} className={styles.captureCard}>
+            {item.previewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img alt={item.label} className={styles.capturePreview} src={item.previewUrl} />
+            ) : (
+              <div className={styles.capturePlaceholder}>{item.label}</div>
+            )}
+            <input
+              accept="image/*"
+              capture="environment"
+              className={styles.captureInput}
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0];
+                if (!file) return;
+                startUploadTransition(async () => {
+                  try {
+                    await uploadCardImage(item.side, file);
+                  } catch (error) {
+                    setUploadMessage(error instanceof Error ? error.message : "画像保存に失敗しました。");
+                  }
+                });
+              }}
+              type="file"
+            />
+            <span className={styles.captureButton}>
+              {isUploading ? "保存中..." : item.storagePath ? "撮り直す" : "LINEカメラで撮影"}
+            </span>
+          </label>
+        ))}
+      </div>
+      <input name="frontImagePath" type="hidden" value={frontImagePath} />
+      <input name="frontImageMimeType" type="hidden" value={frontImageMimeType} />
+      <input name="backImagePath" type="hidden" value={backImagePath} />
+      <input name="backImageMimeType" type="hidden" value={backImageMimeType} />
+      {uploadMessage ? <p className={styles.formMessage}>{uploadMessage}</p> : null}
       <div className={styles.formGrid}>
         <input className={styles.textInput} name="companyName" defaultValue={contact.companyName} placeholder="会社名" />
         <input className={styles.textInput} name="personName" defaultValue={contact.personName} placeholder="氏名" />

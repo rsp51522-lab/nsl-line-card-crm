@@ -20,6 +20,10 @@ export async function POST(request: Request) {
     nextFollowUpDate?: string;
     nextFollowUpType?: string;
     memo?: string;
+    frontImagePath?: string;
+    frontImageMimeType?: string;
+    backImagePath?: string;
+    backImageMimeType?: string;
   };
 
   if (!body.companyName?.trim() || !body.personName?.trim()) {
@@ -74,7 +78,7 @@ export async function POST(request: Request) {
 
   try {
     const supabase = createSupabaseServerClient();
-    const { error } = await supabase.from("contacts").insert({
+    const { data: inserted, error } = await supabase.from("contacts").insert({
       owner_user_id: DEFAULT_OWNER_ID,
       company_name: body.companyName.trim(),
       person_name: body.personName.trim(),
@@ -93,10 +97,41 @@ export async function POST(request: Request) {
       next_follow_up_type: body.nextFollowUpType?.trim() || null,
       memo: body.memo?.trim() || null,
       first_registered_at: new Date().toISOString().slice(0, 10),
-    });
+    }).select("id").single();
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    const imageRows: Array<{
+      contact_id: string;
+      side: "front" | "back";
+      storage_path: string;
+      mime_type: string | null;
+    }> = [
+      body.frontImagePath?.trim()
+        ? {
+            contact_id: inserted.id,
+            side: "front" as const,
+            storage_path: body.frontImagePath.trim(),
+            mime_type: body.frontImageMimeType?.trim() || null,
+          }
+        : null,
+      body.backImagePath?.trim()
+        ? {
+            contact_id: inserted.id,
+            side: "back" as const,
+            storage_path: body.backImagePath.trim(),
+            mime_type: body.backImageMimeType?.trim() || null,
+          }
+        : null,
+    ].filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+    if (imageRows.length > 0) {
+      const { error: imageError } = await supabase.from("contact_images").insert(imageRows);
+      if (imageError) {
+        return NextResponse.json({ error: imageError.message }, { status: 500 });
+      }
     }
 
     return NextResponse.json({ mode: "db", message: "名刺データを保存しました。" });

@@ -72,7 +72,7 @@ export default function OcrPage() {
 
       <section className={styles.card} id="save-contact">
         <h2 className={styles.sectionTitle}>名刺データ保存</h2>
-        <p className={styles.helperText}>Supabase未接続でもデモ送信できます。接続後はそのまま本保存に切り替わります。</p>
+        <p className={styles.helperText}>LINEで開いたままカメラ撮影できます。撮影後はこのURL側へ先に保存され、そのまま名刺データと紐づきます。</p>
         <ContactCreateForm contact={sample} />
       </section>
     </AppShell>
