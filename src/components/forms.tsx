@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./crm.module.css";
+import { buildLineOaMessageUrl, buildLineShareUrl } from "@/lib/line";
 import { Contact } from "@/lib/types";
 
 async function postJson(url: string, payload: Record<string, unknown>) {
@@ -286,7 +287,11 @@ export function ContactCreateForm({ contact }: { contact: Contact }) {
 
 export function ThankYouGenerator({ contact }: { contact: Contact }) {
   const [message, setMessage] = useState("");
+  const [copied, setCopied] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  const lineShareUrl = message ? buildLineShareUrl(message) : "";
+  const lineDirectUrl = message ? buildLineOaMessageUrl(contact.lineUrl, message) : "";
 
   return (
     <div className={styles.stackedForm}>
@@ -318,6 +323,33 @@ export function ThankYouGenerator({ contact }: { contact: Contact }) {
         {isPending ? "生成中..." : "お礼文を生成"}
       </button>
       {message ? <textarea className={styles.textArea} readOnly rows={8} value={message} /> : null}
+      {message ? (
+        <div className={styles.actions}>
+          <a className={styles.action} href={lineDirectUrl || lineShareUrl} target="_blank" rel="noreferrer">
+            {lineDirectUrl ? "LINEで送る" : "LINE共有を開く"}
+          </a>
+          <button
+            className={`${styles.actionButton} ${styles.actionButtonSecondary}`}
+            onClick={() =>
+              startTransition(async () => {
+                await navigator.clipboard.writeText(message);
+                setCopied("本文をコピーしました。");
+              })
+            }
+            type="button"
+          >
+            コピー
+          </button>
+        </div>
+      ) : null}
+      {message ? (
+        <p className={styles.helperText}>
+          {lineDirectUrl
+            ? "相手のLINE公式アカウントが登録されていれば、そのまま入力欄付きで開きます。"
+            : "LINE送信先が未登録でも、共有画面から友だちやKeepへ送れます。"}
+        </p>
+      ) : null}
+      {copied ? <p className={styles.formMessage}>{copied}</p> : null}
     </div>
   );
 }

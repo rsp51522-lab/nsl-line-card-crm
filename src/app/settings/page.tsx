@@ -1,7 +1,10 @@
 import { AppShell } from "@/components/app-shell";
 import styles from "@/components/crm.module.css";
+import { hasLineMessagingEnv } from "@/lib/line";
 
 export default function SettingsPage() {
+  const lineConnected = hasLineMessagingEnv();
+
   return (
     <AppShell
       title="設定 / 連携"
@@ -25,6 +28,30 @@ export default function SettingsPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </article>
+
+        <article className={styles.card}>
+          <h2 className={styles.sectionTitle}>LINE連携状況</h2>
+          <div className={styles.list}>
+            <div className={styles.listItem}>
+              <div className={styles.contactHead}>
+                <strong>お礼LINE共有</strong>
+                <span className={styles.statusDone}>利用可能</span>
+              </div>
+              <p className={styles.helperText}>AIで文面生成後、LINE共有または公式アカウントのチャット画面へ渡せます。</p>
+            </div>
+            <div className={styles.listItem}>
+              <div className={styles.contactHead}>
+                <strong>LINE Bot自動送信</strong>
+                <span className={lineConnected ? styles.statusDone : styles.statusScheduled}>
+                  {lineConnected ? "設定済み" : "設定待ち"}
+                </span>
+              </div>
+              <p className={styles.helperText}>
+                必要項目: `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_CHANNEL_SECRET`
+              </p>
+            </div>
           </div>
         </article>
 
