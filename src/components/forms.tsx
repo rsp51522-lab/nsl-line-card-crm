@@ -1,0 +1,286 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import styles from "./crm.module.css";
+import { Contact } from "@/lib/types";
+
+async function postJson(url: string, payload: Record<string, unknown>) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = (await response.json()) as { error?: string; message?: string; fallbackMessage?: string };
+  if (!response.ok) {
+    const error = new Error(data.error || "処理に失敗しました。") as Error & {
+      fallbackMessage?: string;
+    };
+    error.fallbackMessage = data.fallbackMessage;
+    throw error;
+  }
+  return data;
+}
+
+export function TagCreateForm() {
+  const [message, setMessage] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  return (
+    <form
+      className={styles.inlineForm}
+      onSubmit={(event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        startTransition(async () => {
+          try {
+            const result = await postJson("/api/tags", {
+              name: String(form.get("name") || ""),
+              color: String(form.get("color") || ""),
+            });
+            setMessage(result.message || "保存しました。");
+            event.currentTarget.reset();
+            router.refresh();
+          } catch (error) {
+            setMessage(error instanceof Error ? error.message : "保存に失敗しました。");
+          }
+        });
+      }}
+    >
+      <input className={styles.textInput} name="name" placeholder="例: 重要顧客" />
+      <input className={styles.textInput} name="color" placeholder="#163a70" />
+      <button className={styles.actionButton} disabled={isPending} type="submit">
+        {isPending ? "送信中..." : "タグ追加"}
+      </button>
+      {message ? <p className={styles.formMessage}>{message}</p> : null}
+    </form>
+  );
+}
+
+export function ActivityCreateForm({ contacts }: { contacts: Contact[] }) {
+  const [message, setMessage] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  return (
+    <form
+      className={styles.stackedForm}
+      onSubmit={(event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        startTransition(async () => {
+          try {
+            const result = await postJson("/api/activities", {
+              contactId: String(form.get("contactId") || ""),
+              activityDate: String(form.get("activityDate") || ""),
+              activityType: String(form.get("activityType") || ""),
+              title: String(form.get("title") || ""),
+              detail: String(form.get("detail") || ""),
+              nextAction: String(form.get("nextAction") || ""),
+              nextFollowUpDate: String(form.get("nextFollowUpDate") || ""),
+            });
+            setMessage(result.message || "保存しました。");
+            event.currentTarget.reset();
+            router.refresh();
+          } catch (error) {
+            setMessage(error instanceof Error ? error.message : "保存に失敗しました。");
+          }
+        });
+      }}
+    >
+      <div className={styles.formGrid}>
+        <select className={styles.textInput} name="contactId" defaultValue="">
+          <option value="" disabled>名刺を選択</option>
+          {contacts.map((contact) => (
+            <option key={contact.id} value={contact.id}>
+              {contact.companyName} / {contact.personName}
+            </option>
+          ))}
+        </select>
+        <input className={styles.textInput} name="activityDate" type="date" />
+        <select className={styles.textInput} name="activityType" defaultValue="call">
+          {["exchange", "call", "line", "visit", "proposal", "quote", "contract"].map((value) => (
+            <option key={value} value={value}>
+              {value}
+            </option>
+          ))}
+        </select>
+        <input className={styles.textInput} name="title" placeholder="例: 電話フォロー" />
+      </div>
+      <textarea className={styles.textArea} name="detail" placeholder="内容" rows={4} />
+      <div className={styles.formGrid}>
+        <input className={styles.textInput} name="nextAction" placeholder="次回アクション" />
+        <input className={styles.textInput} name="nextFollowUpDate" type="date" />
+      </div>
+      <button className={styles.actionButton} disabled={isPending} type="submit">
+        {isPending ? "送信中..." : "履歴を追加"}
+      </button>
+      {message ? <p className={styles.formMessage}>{message}</p> : null}
+    </form>
+  );
+}
+
+export function ContactCreateForm({ contact }: { contact: Contact }) {
+  const [message, setMessage] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  return (
+    <form
+      className={styles.stackedForm}
+      onSubmit={(event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        startTransition(async () => {
+          try {
+            const result = await postJson("/api/contacts", {
+              companyName: String(form.get("companyName") || ""),
+              personName: String(form.get("personName") || ""),
+              department: String(form.get("department") || ""),
+              position: String(form.get("position") || ""),
+              postalCode: String(form.get("postalCode") || ""),
+              address: String(form.get("address") || ""),
+              email: String(form.get("email") || ""),
+              phone: String(form.get("phone") || ""),
+              mobilePhone: String(form.get("mobilePhone") || ""),
+              fax: String(form.get("fax") || ""),
+              websiteUrl: String(form.get("websiteUrl") || ""),
+              eventName: String(form.get("eventName") || ""),
+              exchangedAt: String(form.get("exchangedAt") || ""),
+              nextFollowUpDate: String(form.get("nextFollowUpDate") || ""),
+              nextFollowUpType: String(form.get("nextFollowUpType") || ""),
+              memo: String(form.get("memo") || ""),
+            });
+            setMessage(result.message || "保存しました。");
+            router.refresh();
+          } catch (error) {
+            setMessage(error instanceof Error ? error.message : "保存に失敗しました。");
+          }
+        });
+      }}
+    >
+      <div className={styles.formGrid}>
+        <input className={styles.textInput} name="companyName" defaultValue={contact.companyName} placeholder="会社名" />
+        <input className={styles.textInput} name="personName" defaultValue={contact.personName} placeholder="氏名" />
+        <input className={styles.textInput} name="department" defaultValue={contact.department} placeholder="部署" />
+        <input className={styles.textInput} name="position" defaultValue={contact.position} placeholder="役職" />
+        <input className={styles.textInput} name="postalCode" defaultValue={contact.postalCode} placeholder="郵便番号" />
+        <input className={styles.textInput} name="address" defaultValue={contact.address} placeholder="住所" />
+        <input className={styles.textInput} name="email" defaultValue={contact.email} placeholder="メール" />
+        <input className={styles.textInput} name="phone" defaultValue={contact.phone} placeholder="電話番号" />
+        <input className={styles.textInput} name="mobilePhone" defaultValue={contact.mobilePhone} placeholder="携帯番号" />
+        <input className={styles.textInput} name="fax" defaultValue={contact.fax} placeholder="FAX" />
+        <input className={styles.textInput} name="websiteUrl" defaultValue={contact.websiteUrl} placeholder="URL" />
+        <input className={styles.textInput} name="eventName" defaultValue={contact.eventName} placeholder="イベント名" />
+        <input className={styles.textInput} name="exchangedAt" defaultValue={contact.exchangedAt} type="date" />
+        <input className={styles.textInput} name="nextFollowUpDate" defaultValue={contact.nextFollowUpDate} type="date" />
+        <input className={styles.textInput} name="nextFollowUpType" defaultValue={contact.nextFollowUpType} placeholder="次回連絡種別" />
+      </div>
+      <textarea className={styles.textArea} name="memo" defaultValue={contact.memo} rows={4} />
+      <button className={styles.actionButton} disabled={isPending} type="submit">
+        {isPending ? "保存中..." : "名刺データを保存"}
+      </button>
+      {message ? <p className={styles.formMessage}>{message}</p> : null}
+    </form>
+  );
+}
+
+export function ThankYouGenerator({ contact }: { contact: Contact }) {
+  const [message, setMessage] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  return (
+    <div className={styles.stackedForm}>
+      <button
+        className={styles.actionButton}
+        disabled={isPending}
+        onClick={() =>
+          startTransition(async () => {
+            try {
+              const result = await postJson("/api/ai/thank-you", {
+                companyName: contact.companyName,
+                personName: contact.personName,
+                eventName: contact.eventName,
+                memo: contact.memo,
+                nextAction: contact.activities[0]?.nextAction || contact.nextFollowUpType,
+              });
+              setMessage(result.message || "");
+            } catch (error) {
+              if (error instanceof Error && "fallbackMessage" in error && typeof error.fallbackMessage === "string") {
+                setMessage(`${error.message}\n\n代替文面:\n${error.fallbackMessage}`);
+                return;
+              }
+              setMessage(error instanceof Error ? error.message : "生成に失敗しました。");
+            }
+          })
+        }
+        type="button"
+      >
+        {isPending ? "生成中..." : "お礼文を生成"}
+      </button>
+      {message ? <textarea className={styles.textArea} readOnly rows={8} value={message} /> : null}
+    </div>
+  );
+}
+
+export function AIInsightPanel({ contact }: { contact: Contact }) {
+  const [summary, setSummary] = useState("");
+  const [followUp, setFollowUp] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  async function generate(url: string, setter: (value: string) => void) {
+    try {
+      const result = await postJson(url, {
+        companyName: contact.companyName,
+        personName: contact.personName,
+        businessCategory: contact.businessCategory,
+        memo: contact.memo,
+        referrer: contact.referrer,
+        nextFollowUpType: contact.nextFollowUpType,
+        nextFollowUpDate: contact.nextFollowUpDate,
+      });
+      setter(result.message || "");
+    } catch (error) {
+      if (error instanceof Error && "fallbackMessage" in error && typeof error.fallbackMessage === "string") {
+        setter(`${error.message}\n\n代替結果:\n${error.fallbackMessage}`);
+        return;
+      }
+      setter(error instanceof Error ? error.message : "生成に失敗しました。");
+    }
+  }
+
+  return (
+    <div className={styles.stackedForm}>
+      <div className={styles.actions}>
+        <button
+          className={styles.actionButton}
+          disabled={isPending}
+          onClick={() =>
+            startTransition(async () => {
+              await generate("/api/ai/summary", setSummary);
+            })
+          }
+          type="button"
+        >
+          {isPending ? "生成中..." : "AI要約を更新"}
+        </button>
+        <button
+          className={styles.actionButton}
+          disabled={isPending}
+          onClick={() =>
+            startTransition(async () => {
+              await generate("/api/ai/follow-up", setFollowUp);
+            })
+          }
+          type="button"
+        >
+          {isPending ? "生成中..." : "AIフォロー提案"}
+        </button>
+      </div>
+      {summary ? <textarea className={styles.textArea} readOnly rows={6} value={summary} /> : null}
+      {followUp ? <textarea className={styles.textArea} readOnly rows={7} value={followUp} /> : null}
+    </div>
+  );
+}
