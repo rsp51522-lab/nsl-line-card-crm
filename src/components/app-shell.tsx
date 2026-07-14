@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import styles from "./crm.module.css";
 
 const navItems = [
-  { href: "/", label: "ホーム" },
   { href: "/contacts", label: "名刺一覧" },
   { href: "/ocr", label: "登録/OCR" },
   { href: "/search", label: "検索" },
