@@ -288,6 +288,7 @@ export function ContactCreateForm({ contact }: { contact: Contact }) {
 export function ThankYouGenerator({ contact }: { contact: Contact }) {
   const [message, setMessage] = useState("");
   const [copied, setCopied] = useState("");
+  const [linePushResult, setLinePushResult] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const lineShareUrl = message ? buildLineShareUrl(message) : "";
@@ -332,6 +333,25 @@ export function ThankYouGenerator({ contact }: { contact: Contact }) {
             className={`${styles.actionButton} ${styles.actionButtonSecondary}`}
             onClick={() =>
               startTransition(async () => {
+                try {
+                  const result = await postJson("/api/line/push", {
+                    target: "owner",
+                    message,
+                  });
+                  setLinePushResult(result.message || "自分のLINEへ送信しました。");
+                } catch (error) {
+                  setLinePushResult(error instanceof Error ? error.message : "LINE送信に失敗しました。");
+                }
+              })
+            }
+            type="button"
+          >
+            自分のLINEへ送る
+          </button>
+          <button
+            className={`${styles.actionButton} ${styles.actionButtonSecondary}`}
+            onClick={() =>
+              startTransition(async () => {
                 await navigator.clipboard.writeText(message);
                 setCopied("本文をコピーしました。");
               })
@@ -350,6 +370,7 @@ export function ThankYouGenerator({ contact }: { contact: Contact }) {
         </p>
       ) : null}
       {copied ? <p className={styles.formMessage}>{copied}</p> : null}
+      {linePushResult ? <p className={styles.formMessage}>{linePushResult}</p> : null}
     </div>
   );
 }

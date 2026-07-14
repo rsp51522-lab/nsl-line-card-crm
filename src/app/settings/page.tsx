@@ -1,9 +1,25 @@
 import { AppShell } from "@/components/app-shell";
 import styles from "@/components/crm.module.css";
-import { hasLineMessagingEnv } from "@/lib/line";
+import { getLineWebhookUrl, hasLineMessagingEnv } from "@/lib/line";
+import { DEFAULT_OWNER_ID, createSupabaseServerClient, hasSupabaseEnv } from "@/lib/supabase";
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
   const lineConnected = hasLineMessagingEnv();
+  let ownerLineLinked = false;
+
+  if (hasSupabaseEnv()) {
+    try {
+      const supabase = createSupabaseServerClient();
+      const { data } = await supabase
+        .from("users")
+        .select("line_user_id")
+        .eq("id", DEFAULT_OWNER_ID)
+        .maybeSingle();
+      ownerLineLinked = Boolean(data?.line_user_id);
+    } catch {
+      ownerLineLinked = false;
+    }
+  }
 
   return (
     <AppShell
@@ -48,9 +64,22 @@ export default function SettingsPage() {
                   {lineConnected ? "設定済み" : "設定待ち"}
                 </span>
               </div>
+              <p className={styles.helperText}>必要項目: `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_CHANNEL_SECRET`</p>
+            </div>
+            <div className={styles.listItem}>
+              <div className={styles.contactHead}>
+                <strong>自分のLINEアカウント連携</strong>
+                <span className={ownerLineLinked ? styles.statusDone : styles.statusScheduled}>
+                  {ownerLineLinked ? "連携済み" : "未連携"}
+                </span>
+              </div>
               <p className={styles.helperText}>
-                必要項目: `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_CHANNEL_SECRET`
+                友だち追加後に Bot へ `NSL連携` と送ると、このアカウントへPush送信できるようになります。
               </p>
+            </div>
+            <div className={styles.listItem}>
+              <strong>Webhook URL</strong>
+              <p className={styles.helperText}>{getLineWebhookUrl()}</p>
             </div>
           </div>
         </article>

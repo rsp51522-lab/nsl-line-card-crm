@@ -33,3 +33,8 @@ export function buildLineOaMessageUrl(lineIdOrUrl: string, message?: string) {
 export function hasLineMessagingEnv() {
   return Boolean(process.env.LINE_CHANNEL_ACCESS_TOKEN && process.env.LINE_CHANNEL_SECRET);
 }
+
+export function getLineWebhookUrl() {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nsl-line-card-crm.vercel.app";
+  return `${siteUrl.replace(/\/$/, "")}/api/line/webhook`;
+}
