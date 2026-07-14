@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { addDemoActivity } from "@/lib/demo-store";
 import { Contact } from "@/lib/types";
 import { createSupabaseServerClient, DEFAULT_OWNER_ID, hasSupabaseEnv } from "@/lib/supabase";
 
@@ -19,6 +18,7 @@ export async function POST(request: Request) {
   }
 
   if (!hasSupabaseEnv()) {
+    const { addDemoActivity } = await import("@/lib/demo-store");
     await addDemoActivity({
       id: `demo-activity-${Date.now()}`,
       contactId: body.contactId,

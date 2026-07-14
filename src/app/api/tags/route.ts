@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { addDemoTag } from "@/lib/demo-store";
 import { createSupabaseServerClient, DEFAULT_OWNER_ID, hasSupabaseEnv } from "@/lib/supabase";
 
 export async function POST(request: Request) {
@@ -11,6 +10,7 @@ export async function POST(request: Request) {
   }
 
   if (!hasSupabaseEnv()) {
+    const { addDemoTag } = await import("@/lib/demo-store");
     await addDemoTag(name);
     return NextResponse.json({
       mode: "mock",

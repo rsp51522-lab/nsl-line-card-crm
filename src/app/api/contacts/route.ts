@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { addDemoContact } from "@/lib/demo-store";
 import { Contact } from "@/lib/types";
 import { createSupabaseServerClient, DEFAULT_OWNER_ID, hasSupabaseEnv } from "@/lib/supabase";
 
@@ -28,6 +27,7 @@ export async function POST(request: Request) {
   }
 
   if (!hasSupabaseEnv()) {
+    const { addDemoContact } = await import("@/lib/demo-store");
     const id = `${body.companyName.trim().toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`;
     const contact: Contact = {
       id,

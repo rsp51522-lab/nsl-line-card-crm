@@ -1,5 +1,4 @@
 import { aiSuggestions, contacts as mockContacts, dashboardMetrics, quickActions, searchableFields, todayTasks } from "@/data/mock-data";
-import { getDemoContacts, getDemoTagSummaries } from "@/lib/demo-store";
 import { Contact, DashboardMetrics, TagSummary } from "@/lib/types";
 import { createSupabaseServerClient, hasSupabaseEnv } from "@/lib/supabase";
 
@@ -52,6 +51,16 @@ function aggregateTags(items: Contact[]): TagSummary[] {
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "ja"));
 }
 
+async function getDemoContactsFromStore() {
+  const { getDemoContacts } = await import("@/lib/demo-store");
+  return getDemoContacts();
+}
+
+async function getDemoTagSummariesFromStore() {
+  const { getDemoTagSummaries } = await import("@/lib/demo-store");
+  return getDemoTagSummaries();
+}
+
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   if (!hasSupabaseEnv()) return dashboardMetrics;
 
@@ -95,7 +104,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 
 export async function getContacts(filters: SearchFilters = {}): Promise<Contact[]> {
   if (!hasSupabaseEnv()) {
-    const contacts = await getDemoContacts();
+    const contacts = await getDemoContactsFromStore();
     return contacts.filter((contact) => matchesFilters(contact, filters));
   }
 
@@ -211,7 +220,7 @@ export async function getContacts(filters: SearchFilters = {}): Promise<Contact[
 }
 
 export async function getContactById(id: string): Promise<Contact | null> {
-  const mockContactsMerged = hasSupabaseEnv() ? mockContacts : await getDemoContacts();
+  const mockContactsMerged = hasSupabaseEnv() ? mockContacts : await getDemoContactsFromStore();
   const mockMatch = mockContactsMerged.find((contact) => contact.id === id) ?? null;
   if (!hasSupabaseEnv()) return mockMatch;
 
@@ -281,7 +290,7 @@ export async function getContactById(id: string): Promise<Contact | null> {
 }
 
 export async function getTagSummaries(): Promise<TagSummary[]> {
-  if (!hasSupabaseEnv()) return getDemoTagSummaries();
+  if (!hasSupabaseEnv()) return getDemoTagSummariesFromStore();
   const items = await getContacts();
   return aggregateTags(items);
 }
