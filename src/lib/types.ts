@@ -58,6 +58,8 @@ export type Contact = {
   eventName: string;
   frontImageLabel: string;
   backImageLabel: string;
+  frontImageUrl?: string;
+  backImageUrl?: string;
   ocrWarnings: { field: string; value: string; confidence: number }[];
   activities: Activity[];
   salesRecords: SalesRecord[];

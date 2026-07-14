@@ -122,8 +122,24 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           <article className={styles.card}>
             <h2 className={styles.sectionTitle}>名刺画像</h2>
             <div className={styles.split}>
-              <div className={styles.imageCard}>{contact.frontImageLabel}</div>
-              <div className={styles.imageCard}>{contact.backImageLabel}</div>
+              {contact.frontImageUrl ? (
+                <img
+                  src={contact.frontImageUrl}
+                  alt={`${contact.companyName} の名刺表面`}
+                  className={styles.detailCardImage}
+                />
+              ) : (
+                <div className={styles.imageCard}>{contact.frontImageLabel}</div>
+              )}
+              {contact.backImageUrl ? (
+                <img
+                  src={contact.backImageUrl}
+                  alt={`${contact.companyName} の名刺裏面`}
+                  className={styles.detailCardImage}
+                />
+              ) : (
+                <div className={styles.imageCard}>{contact.backImageLabel}</div>
+              )}
             </div>
           </article>
 

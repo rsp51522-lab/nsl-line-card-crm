@@ -42,3 +42,9 @@ export async function ensureBusinessCardBucket() {
 
   return supabase;
 }
+
+export function getBusinessCardPublicUrl(storagePath: string) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url || !storagePath) return "";
+  return `${url}/storage/v1/object/public/${BUSINESS_CARD_BUCKET}/${storagePath}`;
+}

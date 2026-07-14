@@ -76,12 +76,20 @@ export function ContactDirectoryList({ items }: { items: Contact[] }) {
         <Link href={`/contacts/${contact.id}`} key={contact.id} className={styles.directoryItem}>
           <div className={styles.directoryIndex}>{index + 1}</div>
           <div className={styles.directoryThumb}>
-            <div className={styles.directoryThumbCard}>
-              <div className={styles.directoryThumbCompany}>{contact.companyName}</div>
-              <div className={styles.directoryThumbName}>{contact.personName}</div>
-              <div className={styles.directoryThumbLine} />
-              <div className={styles.directoryThumbLineShort} />
-            </div>
+            {contact.frontImageUrl ? (
+              <img
+                src={contact.frontImageUrl}
+                alt={`${contact.companyName} の名刺表面`}
+                className={styles.directoryThumbImage}
+              />
+            ) : (
+              <div className={styles.directoryThumbCard}>
+                <div className={styles.directoryThumbCompany}>{contact.companyName}</div>
+                <div className={styles.directoryThumbName}>{contact.personName}</div>
+                <div className={styles.directoryThumbLine} />
+                <div className={styles.directoryThumbLineShort} />
+              </div>
+            )}
           </div>
           <div className={styles.directoryBody}>
             <p className={styles.directoryCompany}>{contact.companyName}</p>
@@ -89,6 +97,10 @@ export function ContactDirectoryList({ items }: { items: Contact[] }) {
             <p className={styles.directoryPosition}>{contact.position || contact.department}</p>
             <p className={styles.directoryMeta}>TEL : {contact.mobilePhone || contact.phone || "-"}</p>
             <p className={styles.directoryMeta}>E-mail : {contact.email || "-"}</p>
+            <p className={styles.directoryMetaMuted}>
+              {contact.frontImageLabel}
+              {contact.backImageUrl ? " / 裏面あり" : ""}
+            </p>
           </div>
         </Link>
       ))}

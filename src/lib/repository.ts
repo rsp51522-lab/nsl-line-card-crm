@@ -1,6 +1,6 @@
 import { aiSuggestions, contacts as mockContacts, dashboardMetrics, quickActions, searchableFields, todayTasks } from "@/data/mock-data";
 import { Contact, DashboardMetrics, TagSummary } from "@/lib/types";
-import { createSupabaseServerClient, hasSupabaseEnv } from "@/lib/supabase";
+import { createSupabaseServerClient, getBusinessCardPublicUrl, hasSupabaseEnv } from "@/lib/supabase";
 
 type SearchFilters = {
   query?: string;
@@ -141,6 +141,10 @@ export async function getContacts(filters: SearchFilters = {}): Promise<Contact[
           follow_up_status,
           business_card_exchanged_at,
           business_card_event_name,
+          contact_images (
+            side,
+            storage_path
+          ),
           contact_tags (
             tags ( name )
           )
@@ -168,50 +172,61 @@ export async function getContacts(filters: SearchFilters = {}): Promise<Contact[
     const { data, error } = await query;
     if (error || !data) return mockContacts.filter((contact) => matchesFilters(contact, filters));
 
-    const mapped: Contact[] = (data as Array<Record<string, unknown>>).map((row) => ({
-      id: stringValue(row.id),
-      companyName: stringValue(row.company_name),
-      personName: stringValue(row.person_name),
-      department: stringValue(row.department),
-      position: stringValue(row.position),
-      postalCode: stringValue(row.postal_code),
-      address: stringValue(row.address),
-      email: stringValue(row.email),
-      phone: stringValue(row.phone),
-      mobilePhone: stringValue(row.mobile_phone),
-      fax: stringValue(row.fax),
-      websiteUrl: stringValue(row.website_url),
-      instagramUrl: stringValue(row.instagram_url),
-      lineUrl: stringValue(row.line_id_or_url),
-      facebookUrl: stringValue(row.facebook_url),
-      memo: stringValue(row.memo),
-      aiSummary: typeof row.ai_summary === "string" ? row.ai_summary.split("\n").filter(Boolean) : [],
-      tags:
-        Array.isArray(row.contact_tags)
-          ? row.contact_tags.flatMap((item) => {
-              const nested = item as { tags?: { name?: string } | { name?: string }[] };
-              if (Array.isArray(nested.tags)) {
-                return nested.tags.flatMap((tag) => (tag?.name ? [tag.name] : []));
-              }
-              return nested.tags?.name ? [nested.tags.name] : [];
-            })
-          : [],
-      customerRank: (row.customer_rank ?? 3) as Contact["customerRank"],
-      referrer: stringValue(row.referrer_name),
-      businessCategory: stringValue(row.business_category),
-      firstRegisteredAt: stringValue(row.first_registered_at),
-      updatedAt: stringValue(row.updated_at).slice(0, 10),
-      nextFollowUpDate: stringValue(row.next_follow_up_date),
-      nextFollowUpType: stringValue(row.next_follow_up_type),
-      followUpStatus: (row.follow_up_status ?? "scheduled") as Contact["followUpStatus"],
-      exchangedAt: stringValue(row.business_card_exchanged_at),
-      eventName: stringValue(row.business_card_event_name),
-      frontImageLabel: "表面あり",
-      backImageLabel: "裏面あり",
-      ocrWarnings: [],
-      activities: [],
-      salesRecords: [],
-    }));
+    const mapped: Contact[] = (data as Array<Record<string, unknown>>).map((row) => {
+      const imageRows = Array.isArray(row.contact_images)
+        ? row.contact_images as Array<{ side?: string; storage_path?: string }>
+        : [];
+
+      const frontImagePath = imageRows.find((item) => item.side === "front")?.storage_path ?? "";
+      const backImagePath = imageRows.find((item) => item.side === "back")?.storage_path ?? "";
+
+      return {
+        id: stringValue(row.id),
+        companyName: stringValue(row.company_name),
+        personName: stringValue(row.person_name),
+        department: stringValue(row.department),
+        position: stringValue(row.position),
+        postalCode: stringValue(row.postal_code),
+        address: stringValue(row.address),
+        email: stringValue(row.email),
+        phone: stringValue(row.phone),
+        mobilePhone: stringValue(row.mobile_phone),
+        fax: stringValue(row.fax),
+        websiteUrl: stringValue(row.website_url),
+        instagramUrl: stringValue(row.instagram_url),
+        lineUrl: stringValue(row.line_id_or_url),
+        facebookUrl: stringValue(row.facebook_url),
+        memo: stringValue(row.memo),
+        aiSummary: typeof row.ai_summary === "string" ? row.ai_summary.split("\n").filter(Boolean) : [],
+        tags:
+          Array.isArray(row.contact_tags)
+            ? row.contact_tags.flatMap((item) => {
+                const nested = item as { tags?: { name?: string } | { name?: string }[] };
+                if (Array.isArray(nested.tags)) {
+                  return nested.tags.flatMap((tag) => (tag?.name ? [tag.name] : []));
+                }
+                return nested.tags?.name ? [nested.tags.name] : [];
+              })
+            : [],
+        customerRank: (row.customer_rank ?? 3) as Contact["customerRank"],
+        referrer: stringValue(row.referrer_name),
+        businessCategory: stringValue(row.business_category),
+        firstRegisteredAt: stringValue(row.first_registered_at),
+        updatedAt: stringValue(row.updated_at).slice(0, 10),
+        nextFollowUpDate: stringValue(row.next_follow_up_date),
+        nextFollowUpType: stringValue(row.next_follow_up_type),
+        followUpStatus: (row.follow_up_status ?? "scheduled") as Contact["followUpStatus"],
+        exchangedAt: stringValue(row.business_card_exchanged_at),
+        eventName: stringValue(row.business_card_event_name),
+        frontImageLabel: frontImagePath ? "表面あり" : "表面未登録",
+        backImageLabel: backImagePath ? "裏面あり" : "裏面未登録",
+        frontImageUrl: frontImagePath ? getBusinessCardPublicUrl(frontImagePath) : undefined,
+        backImageUrl: backImagePath ? getBusinessCardPublicUrl(backImagePath) : undefined,
+        ocrWarnings: [],
+        activities: [],
+        salesRecords: [],
+      };
+    });
 
     return mapped.filter((contact) => matchesFilters(contact, filters));
   } catch {
@@ -241,7 +256,7 @@ export async function getContactById(id: string): Promise<Contact | null> {
         .select("project_name, contract_amount, order_date, status")
         .eq("contact_id", id)
         .order("order_date", { ascending: false }),
-      supabase.from("contact_images").select("side").eq("contact_id", id),
+      supabase.from("contact_images").select("side, storage_path").eq("contact_id", id),
       supabase
         .from("ocr_jobs")
         .select("id, ocr_fields(field_name, field_value, confidence)")
@@ -257,6 +272,12 @@ export async function getContactById(id: string): Promise<Contact | null> {
         imageRes.data?.some((item) => item.side === "front") ? "表面あり" : "表面未登録",
       backImageLabel:
         imageRes.data?.some((item) => item.side === "back") ? "裏面あり" : "裏面未登録",
+      frontImageUrl: getBusinessCardPublicUrl(
+        imageRes.data?.find((item) => item.side === "front")?.storage_path ?? "",
+      ) || undefined,
+      backImageUrl: getBusinessCardPublicUrl(
+        imageRes.data?.find((item) => item.side === "back")?.storage_path ?? "",
+      ) || undefined,
       activities:
         activityRes.data?.map((item) => ({
           id: item.id,
