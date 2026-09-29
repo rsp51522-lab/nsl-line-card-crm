@@ -16,12 +16,14 @@
     "@opennextjs/cloudflare": "^1.8.3",
     "@supabase/supabase-js": "^2.110.5",
     "next": "16.2.10",
+    "nodemailer": "^10.0.12",
     "openai": "^6.46.0",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
