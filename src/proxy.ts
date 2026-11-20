@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const UPSTREAM_ORIGIN = "https://business-card-line-app-nsl.vercel.app";
-const PATCHED_CLIENT_CHUNK = "/_next/static/chunks/0u3lb4cl4dhpz.js";
+const PATCHED_CLIENT_CHUNK = "/_next/static/chunks/2e_sz6qf68aa1.js";
 const LOCAL_PATCH_FILE = "/patched-card-client.js";
 const THANK_YOU_SEND_API = "/api/send-thank-you";
 
